@@ -1,9 +1,14 @@
 import { Op } from "sequelize";
 import Photos from "../models/PhotoModel.js";
 import Users from "../models/UserModel.js";
+import path from "path";
+import fs from "fs";
 
 export const addPhoto = async (req,res) => {
-    const {title, caption, photoUrl} = req.body;
+    if(!req.file) return res.status(422).json({msg: "Image not uploaded"});
+    const {title, caption} = req.body;
+    // perlu mengubah path jadi posix kalau di windows:
+    const photoUrl = req.file.path.split(path.sep).join(path.posix.sep);
     try {
         await Photos.create({
             title,
@@ -74,11 +79,10 @@ export const updatePhoto = async (req,res) => {
         if(!photo) return res.status(404).json({msg: "Photo not found"});
 
         if(photo.userId !== req.userId) return res.status(403).json({msg: "Forbidden"});
-        const {title, caption, photoUrl} = req.body;
+        const {title, caption} = req.body;
         await Photos.update({
             title,
-            caption,
-            photoUrl
+            caption
         },{
             where: {
                 [Op.and]: [
@@ -103,6 +107,10 @@ export const deletePhoto = async (req,res) => {
         if(!photo) return res.status(404).json({msg: "Photo not found"});
 
         if(photo.userId !== req.userId) return res.status(403).json({msg: "Forbidden"});
+
+        fs.rm(`./${photo.photoUrl}`, {recursive: true}, (err) => {
+            if(err) return res.status(500).json({msg: err.message});
+        });
         await Photos.destroy({
             where: {
                 [Op.and]: [

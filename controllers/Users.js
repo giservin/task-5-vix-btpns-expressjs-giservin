@@ -1,11 +1,13 @@
 import Users from "../models/UserModel.js";
 import bcrypt from "bcryptjs";
-import { signJWT, verifyJWT } from "../helpers/JWT.js";
+import { signJWT } from "../helpers/JWT.js";
+import fs from "fs";
 
 export const registerUser = async (req, res) => {
     const { username, email, password } = req.body
-    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log(username, email, password);
     try {
+        const hashedPassword = await bcrypt.hash(password, 10);
         await Users.create({
             username,
             email,
@@ -83,6 +85,10 @@ export const deleteUser = async (req, res) => {
             }
         });
         if(!user) return res.status(404).json({msg: "User not found"});
+        // deleting all the user's photos.
+        fs.rm(`./tmp/${user.email}`, {recursive: true, force: true}, (err) => {
+            if(err) return res.status(500).json({msg: err.message});
+        })
         await Users.destroy({
             where: {
                 id: user.id

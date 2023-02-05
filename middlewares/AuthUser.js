@@ -6,6 +6,7 @@ export const AuthUser = async (req, res, next) => {
     try {
         const currentUser = await verifyJWT(req.cookies.access_token);
         req.userId = currentUser.id;
+        req.userEmail = currentUser.email;
     } catch(err){
         res.status(400).json({msg: err.message});
     }
